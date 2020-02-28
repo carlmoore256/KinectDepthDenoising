@@ -82,7 +82,7 @@ def process_frames(c_path, d_path, calibration_data, clean_depth=False):
 
     return c_frames, d_frames
 
-def register_frames(d_frames, calibration_data, depthDilation=False):
+def register_frames(d_frames, calibration_data, depthDilation=False, clean_depth=False):
     # load d_instrinsics
     unregisteredCameraMatrix = calibration_data[2]
     # load c_instrinsics
@@ -103,7 +103,12 @@ def register_frames(d_frames, calibration_data, depthDilation=False):
                                             frame,
                                             (1920, 1080),
                                             depthDilation=depthDilation)
+
         registered_frames.append(registered)
+
+    if clean_depth:
+        print('cleaning depth frames')
+        registered = clean_dframes(registered_frames)
 
     return registered_frames
 
@@ -113,12 +118,12 @@ if __name__ == '__main__':
                                         'camA/depth/',
                                         calibration_data,
                                         False)
-    c_frames = (c_frames[0:10])
-    d_frames = (d_frames[0:10])
+    c_frames = (c_frames[10:20])
+    d_frames = (d_frames[10:20])
 
     registered_dframes = register_frames(d_frames,
                                         calibration_data,
-                                        False)
+                                        False, True)
 
     merge_rgbd.generate_video(c_frames, registered_dframes, 'rgbd_merged.mp4')
 
