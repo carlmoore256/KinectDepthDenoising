@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import merge_rgbd
 
 def calibration():
+    # currently hard-coded in calibration data to be parsed from json
     d_instrinsics = np.array([[ 365.278106689453, 0, 252.810501098633],
                     [0, 365.278106689453, 201.51579284668],
                     [0, 0, 1]])
@@ -21,7 +22,7 @@ def calibration():
 
     rot_vec = np.array([-0.00188098498620093,-0.00199701404199004,0.00392582034692168])
     rot_mat = cv2.Rodrigues(np.asarray(rot_vec))
-    translation_vec = np.array([-0.2926155941188335, 1.63855190749018e-06, 0.000125980019220151]).T
+    translation_vec = np.array([ -0.05261559411883354, 1.63855190749018e-06, 0.000125980019220151]).T
     t_mat = cv2.hconcat((rot_mat[0], translation_vec))
     t_mat_real = np.vstack((t_mat, [0,0,0,1]))
 
@@ -69,10 +70,12 @@ def process_frames(c_path, d_path, calibration_data, clean_depth=False):
 
     for f in load_frames(c_path):
         undist = undistort_frame(f, calibration_data[0], calibration_data[1])
+        # undist = cv2.resize(undist,(1280, 720))
         c_frames.append(undist)
 
     for f in load_frames(d_path):
         # shift out the first 3 bits encoded by dk
+        # undist = cv2.resize(undist,(750,422))
         f = shift_depth(f)
         undist = undistort_frame(f, calibration_data[2], calibration_data[3])
         d_frames.append(undist)
@@ -82,6 +85,7 @@ def process_frames(c_path, d_path, calibration_data, clean_depth=False):
 
     return c_frames, d_frames
 
+@profile
 def register_frames(d_frames, calibration_data, depthDilation=False, clean_depth=False):
     # load d_instrinsics
     unregisteredCameraMatrix = calibration_data[2]
@@ -103,7 +107,7 @@ def register_frames(d_frames, calibration_data, depthDilation=False, clean_depth
                                             frame,
                                             (1920, 1080),
                                             depthDilation=depthDilation)
-
+        # registered = cv2.resize(registered, (1920,1080))
         registered_frames.append(registered)
 
     if clean_depth:
@@ -118,17 +122,23 @@ if __name__ == '__main__':
                                         'camA/depth/',
                                         calibration_data,
                                         False)
-    c_frames = (c_frames[10:20])
-    d_frames = (d_frames[10:20])
+    # c_frames = (c_frames[:])
+    # d_frames = (d_frames[0:len(c_frames)])
+    c_frames = (c_frames[:1])
+    d_frames = (d_frames[:1])
 
     registered_dframes = register_frames(d_frames,
                                         calibration_data,
                                         False, True)
 
-    merge_rgbd.generate_video(c_frames, registered_dframes, 'rgbd_merged.mp4')
+    # merge_rgbd.generate_video(c_frames, registered_dframes, 'rgbd_merged_C.mp4')
+    prefix = 'camA_depth_'
+    output_dir = 'camA/registered/'
 
-    # for i, f in enumerate(registered_dframes):
-    #     cv2.imwrite('camA/registered/depth_' + str(i) + '.png', (f).astype('uint16'))
+    for i, f in enumerate(registered_dframes):
+        num = "{:04d}".format(i)
+        cv2.imwrite('{d}{n}_{c}.png'.format(d=output_dir,n=prefix,c=num), (f).astype('uint16'))
+        # cv2.imwrite('camA/registered/depth_' + str(i) + '.png', (f).astype('uint16'))
 
     # for i, f in enumerate(c_frames):
     #     cv2.imwrite('camA/registered/color_' + str(i) + '.png', (f).astype('uint8'))

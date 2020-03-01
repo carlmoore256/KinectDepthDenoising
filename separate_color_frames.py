@@ -4,9 +4,9 @@ from os import listdir
 from os import walk
 import os
 
-video = 'camA/RGB.mp4'
-prefix = 'camA'
-output_dir = 'camA/color/'
+video = 'camC/RGB.mp4'
+prefix = 'camC'
+output_dir = 'camC/color/'
 
 vidcap = cv2.VideoCapture(video)
 success, image = vidcap.read()
